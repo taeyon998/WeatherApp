@@ -1,6 +1,8 @@
 import { Text, Dimensions, StyleSheet, View, ScrollView } from 'react-native';
 import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
+import 'react-native-get-random-values';
+
 
 const {width:SCREEN_WIDTH} = Dimensions.get("window");
 
@@ -8,7 +10,15 @@ export default function App() {
   const [location, setLocation] = useState();
   const [ok, setOk] = useState(true);
   const ask = async () => {
-    const permission = await Location.requestForegroundPermissionsAsync();
+    const {granted} = await Location.requestForegroundPermissionsAsync();
+    if (!granted){
+      setOk(false);
+    }
+    const {coords:{latitude, longitude}} = await Location.getCurrentPositionAsync();
+    const location = await Location.reverseGeocodeAsync(
+      {latitude, longitude},
+      {useGoogleMaps:false}
+    );
     console.log(permission)
   }
 
