@@ -7,23 +7,57 @@ import 'react-native-get-random-values';
 const {width:SCREEN_WIDTH} = Dimensions.get("window");
 
 export default function App() {
-  const [location, setLocation] = useState();
+  const [city, setCity] = useState("loading...");
   const [ok, setOk] = useState(true);
-  const ask = async () => {
-    const {granted} = await Location.requestForegroundPermissionsAsync();
-    if (!granted){
+  const getWeather = async () => {
+    const { granted } = await Location.requestForegroundPermissionsAsync();
+  
+    if (!granted) {
       setOk(false);
+      return;
     }
-    const {coords:{latitude, longitude}} = await Location.getCurrentPositionAsync();
-    const location = await Location.reverseGeocodeAsync(
-      {latitude, longitude},
-      {useGoogleMaps:false}
-    );
-    console.log(permission)
-  }
+  
+    const locationCoord = await Location.getCurrentPositionAsync();
+    const { latitude, longitude } = locationCoord.coords;
+  
+    try {
+      // Using the Place Autocomplete service to get place details based on coordinates
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${latitude},${longitude}&key=YOUR_GOOGLE_MAPS_API_KEY`
+      );
+  
+      if (!response.ok) {
+        // Handle the error, e.g., log it or set state to indicate an issue
+        console.error("Failed to fetch place details");
+        return;
+      }
+  
+      const data = await response.json();
+  
+      if (data.predictions && data.predictions.length > 0) {
+        const placeId = data.predictions[0].place_id;
+  
+        // Use the Place Details service to get detailed information about the place
+        const detailsResponse = await fetch(
+          `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&key=YOUR_GOOGLE_MAPS_API_KEY`
+        );
+  
+        if (detailsResponse.ok) {
+          const detailsData = await detailsResponse.json();
+          const address = detailsData.result.formatted_address;
+  
+          // Now you have the address information
+          console.log(address);
+        }
+      }
+    } catch (error) {
+      // Handle any errors that may occur during the fetch requests
+      console.error("Error fetching place details:", error);
+    }
+  };
 
   useEffect(()=>{
-    ask();
+    getWeather();
   }, [])
 
   return (
